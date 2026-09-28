@@ -24,25 +24,95 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-      - name: Extract Android project
+
+      - name: Find and extract Android project
+        id: extract
+        shell: bash
         run: |
-          unzip -o FazbearControl_Phone_Audio_Updated.zip
+          set -e
 
-          echo "Extracted files:"
-          ls -la
+          echo "Searching for Android project ZIP..."
 
-          test -f fazbear_theme_work/settings.gradle
-          test -f fazbear_theme_work/build.gradle
-          test -f fazbear_theme_work/app/build.gradle
-          test -f fazbear_theme_work/app/src/main/AndroidManifest.xml
+          ZIP_PATH="$(find "$GITHUB_WORKSPACE" \
+            -type f -iname 'FazbearControl_Phone_Audio_Updated.zip' \
+            -not -path '*/.git/*' -print -quit)"
 
-          echo "Android project found."
+          if [ -z "$ZIP_PATH" ]; then
+            echo "Exact ZIP name not found. Searching for any ZIP..."
+            ZIP_PATH="$(find "$GITHUB_WORKSPACE" \
+              -type f -iname '*.zip' \
+              -not -path '*/.git/*' -print -quit)"
+          fi
+
+          if [ -z "$ZIP_PATH" ]; then
+            echo "ERROR: No ZIP file was found in the repository."
+            echo "Repository files:"
+            find "$GITHUB_WORKSPACE" -maxdepth 4 -type f -print
+            exit 1
+          fi
+
+          echo "Found ZIP: $ZIP_PATH"
+
+          mkdir -p "$GITHUB_WORKSPACE/extracted"
+          unzip -o "$ZIP_PATH" -d "$GITHUB_WORKSPACE/extracted"
+
+          echo "Searching for Gradle project..."
+
+          PROJECT_DIR="$(find "$GITHUB_WORKSPACE/extracted" \
+            -type f \( -name 'settings.gradle' \
+            -o -name 'settings.gradle.kts' \) \
+            -print -quit | xargs -r dirname)"
+
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "ERROR: Could not find settings.gradle."
+            echo "Extracted files:"
+            find "$GITHUB_WORKSPACE/extracted" -maxdepth 5 -type f -print
+            exit 1
+          fi
+
+          if [ ! -f "$PROJECT_DIR/app/build.gradle" ] && \
+             [ ! -f "$PROJECT_DIR/app/build.gradle.kts" ]; then
+            echo "ERROR: The app Gradle file was not found."
+            echo "Project directory: $PROJECT_DIR"
+            find "$PROJECT_DIR" -maxdepth 4 -type f -print
+            exit 1
+          fi
+
+          echo "Android project found at: $PROJECT_DIR"
+          echo "project_dir=$PROJECT_DIR" >> "$GITHUB_OUTPUT"
+
       - name: Build debug APK
-        working-directory: fazbear_theme_work
-        run: gradle :app:assembleDebug --no-daemon --stacktrace
+        shell: bash
+        run: |
+          set -e
+
+          PROJECT_DIR="${{ steps.extract.outputs.project_dir }}"
+
+          echo "Building Android app in:"
+          echo "$PROJECT_DIR"
+
+          cd "$PROJECT_DIR"
+
+          gradle :app:assembleDebug \
+            --no-daemon \
+            --stacktrace
+
+          APK_PATH="$PROJECT_DIR/app/build/outputs/apk/debug/app-debug.apk"
+
+          if [ ! -f "$APK_PATH" ]; then
+            echo "ERROR: APK was not generated."
+            exit 1
+          fi
+
+          mkdir -p "$GITHUB_WORKSPACE/apk-output"
+          cp "$APK_PATH" "$GITHUB_WORKSPACE/apk-output/Fazbear-Control.apk"
+
+          echo "APK built successfully."
+          ls -lh "$GITHUB_WORKSPACE/apk-output/Fazbear-Control.apk"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Fazbear-Control-debug-apk
-          path: fazbear_theme_work/app/build/outputs/apk/debug/app-debug.apk
+          path: apk-output/Fazbear-Control.apk
+          if-no-files-found: error
