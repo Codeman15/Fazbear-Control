@@ -16,7 +16,7 @@ jobs:
 
       - name: Extract Android project
         run: |
-          unzip -o FAZBEAR_CONTROL_GITHUB_APK_PROJECT.zip
+          unzip -o FAZBEAR_CONTROL_PORTRAIT_THEMES_CUSTOM_IMAGES.zip
 
           test -f settings.gradle
           test -f build.gradle
