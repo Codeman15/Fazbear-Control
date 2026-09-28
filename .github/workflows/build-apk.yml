@@ -27,7 +27,7 @@ jobs:
 
       - name: Extract Android project
         run: |
-          unzip -o FazbearControl_Phone_Audio_Updated_Source.zip
+          unzip -o FazbearControl_Phone_Audio_Updated.zip
           test -f fazbear_theme_work/settings.gradle
           test -f fazbear_theme_work/build.gradle
           test -f fazbear_theme_work/app/build.gradle
