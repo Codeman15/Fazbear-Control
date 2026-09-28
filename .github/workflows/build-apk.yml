@@ -25,14 +25,16 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: Extract Android project
+             - name: Find Android project ZIP
         run: |
-          unzip -o FazbearControl_Phone_Audio_Updated.zip
-          test -f fazbear_theme_work/settings.gradle
-          test -f fazbear_theme_work/build.gradle
-          test -f fazbear_theme_work/app/build.gradle
-          test -f fazbear_theme_work/app/src/main/AndroidManifest.xml
-          echo "Android project found."
+          echo "Current directory:"
+          pwd
+
+          echo "Files in repository:"
+          ls -la
+
+          echo "ZIP files found:"
+          find . -maxdepth 3 -type f -iname "*.zip" -print
 
       - name: Build debug APK
         working-directory: fazbear_theme_work
