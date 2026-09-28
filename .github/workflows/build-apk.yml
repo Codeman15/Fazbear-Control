@@ -25,7 +25,7 @@ jobs:
         with:
           gradle-version: '8.7'
 
-             - name: Find Android project ZIP
+      - name: Find Android project ZIP
         run: |
           echo "Current directory:"
           pwd
