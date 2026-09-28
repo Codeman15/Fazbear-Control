@@ -14,17 +14,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Extract Android project
-        run: |
-          unzip -o FAZBEAR_CONTROL_PORTRAIT_THEMES_CUSTOM_IMAGES.zip
-
-          test -f settings.gradle
-          test -f build.gradle
-          test -f app/build.gradle
-          test -f app/src/main/AndroidManifest.xml
-
-          echo "Android project found."
-
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -36,16 +25,21 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: Build APK
+      - name: Extract Android project
         run: |
-          gradle :app:assembleDebug --no-daemon --stacktrace
+          unzip -o FazbearControl_Phone_Audio_Updated_Source.zip
+          test -f fazbear_theme_work/settings.gradle
+          test -f fazbear_theme_work/build.gradle
+          test -f fazbear_theme_work/app/build.gradle
+          test -f fazbear_theme_work/app/src/main/AndroidManifest.xml
+          echo "Android project found."
 
-      - name: Check APK
-        run: |
-          ls -lh app/build/outputs/apk/debug/app-debug.apk
+      - name: Build debug APK
+        working-directory: fazbear_theme_work
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Fazbear-Control-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: fazbear_theme_work/app/build/outputs/apk/debug/app-debug.apk
